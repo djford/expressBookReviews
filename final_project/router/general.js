@@ -22,69 +22,99 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  res.send(JSON.stringify(books,null,4));
+public_users.get('/', async function (req, res) {
+    try {
+        const booksData = await new Promise((resolve) => resolve(books));
+        res.send(booksData);
+    } catch (error) {
+        res.status(500).send({message: "Error fetching books."});
+    }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
-  
-  if(books[isbn]){
-    res.send(books[isbn]);
-  } else {
-    res.status(404).send({message: `Book with ISBN ${isbn} not found.`});
-  }
+public_users.get('/isbn/:isbn', async function (req, res) {
+    const isbn = req.params.isbn;
+
+    try {
+        const book = await new Promise((resolve, reject) => {
+            if(books[isbn]){
+                resolve(books[isbn]);
+            } else {
+                reject(`Book with ISBN ${isbn} not found.`);
+            }
+        });
+        res.send(book);
+    }  catch (error) {
+        res.status(404).send({ message: error });
+    }  
  });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  const author = req.params.author;
-  let booksByAuthor = [];
+public_users.get('/author/:author', async function (req, res) {
+    const author = req.params.author;
 
-  const bookKeys = Object.keys(books);
+    try {
+        const booksByAuthor = await new Promise((resolve, reject) => {
+            let filteredBooks = [];
 
-  bookKeys.forEach((key) => {
-    if (books[key].author === author){
-        booksByAuthor.push(books[key]);
+            const bookKeys = Object.keys(books);
+
+            bookKeys.forEach((key) => {
+                if (books[key].author === author){
+                    filteredBooks.push(books[key]);
+                }
+            });
+
+            if (filteredBooks.length > 0){
+                resolve(filteredBooks);
+            } else {
+                reject(`No books found by the author ${author}.`);
+            }
+        });
+
+        res.send(booksByAuthor);
+    } catch {
+        res.status(404).send({ message: error });
     }
-  });
-
-  if (booksByAuthor.length > 0){
-    res.send(booksByAuthor);
-  } else {
-    res.status(404).send({message: `No books found by the author ${author}.`});
-  }
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  const title = req.params.title;
-  let booksByTitle = [];
+public_users.get('/title/:title', async function (req, res) {
+    const title = req.params.title;
+    
+    try {
+        const booksByTitle = await new Promise((resolve, reject) => {
+            let filteredBooks = [];
 
-  const bookKeys = Object.keys(books);
+            const bookKeys = Object.keys(books);
 
-  bookKeys.forEach((key) => {
-    if (books[key].title === title){
-        booksByTitle.push(books[key]);
-    } 
-  });
+            bookKeys.forEach((key) => {
+                if (books[key].title === title){
+                    filteredBooks.push(books[key]);
+                }
+            });
 
-  if (booksByTitle.length > 0) {
-    res.send(booksByTitle);
-  } else {
-    res.status(404).send({message: `No books found with the title ${title}.`});
-  }
+            if (filteredBooks.length > 0){
+                resolve(filteredBooks);
+            } else {
+                reject(`No books found with the title ${title}.`);
+            }
+        });
+
+        res.send(booksByTitle);
+    } catch {
+        res.status(404).send({ message: error });
+    }
 });
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
-  const isbn = req.params.isbn;
-  if (books[isbn]){
-    res.send(books[isbn].reviews);
-  } else {
-    res.status(404).send({message: `Book with ISBN ${isbn} not found.`});
-  }
+    const isbn = req.params.isbn;
+    if (books[isbn]){
+        res.send(books[isbn].reviews);
+    } else {
+        res.status(404).send({message: `Book with ISBN ${isbn} not found.`});
+    }
 });
 
 module.exports.general = public_users;
